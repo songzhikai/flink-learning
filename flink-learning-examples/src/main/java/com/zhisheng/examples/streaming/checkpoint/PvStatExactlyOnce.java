@@ -54,7 +54,7 @@ public class PvStatExactlyOnce {
         checkpointConf.enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
 
         Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "cdh00:9092");
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "app-pv-stat");
 
         DataStreamSource<String> appInfoSource = env.addSource(new FlinkKafkaConsumer011<>(

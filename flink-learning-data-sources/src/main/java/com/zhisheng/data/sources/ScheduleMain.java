@@ -76,7 +76,7 @@ public class ScheduleMain {
         Connection connection = MySQLUtil.getConnection("com.mysql.jdbc.Driver",
                 "jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=UTF-8",
                 "root",
-                "root123456");
+                "123456");
 
         PreparedStatement ps = connection.prepareStatement(sql);
         ResultSet resultSet = ps.executeQuery();

@@ -15,8 +15,10 @@ import java.util.Properties;
  * Blog: http://www.54tianzhisheng.cn/tags/Flink/
  */
 public class KafkaUtil {
-    public static final String broker_list = "localhost:9092";
-    public static final String topic = "metric";  // kafka topic，Flink 程序中需要和这个统一
+//    public static final String broker_list = "192.168.1.2:9092";
+    public static final String broker_list = "cdh00:9092";
+    public static final String topic = "metric5";  // kafka topic，Flink 程序中需要和这个统一
+
 
     public static void writeToKafka() throws InterruptedException {
         Properties props = new Properties();
@@ -25,33 +27,17 @@ public class KafkaUtil {
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer"); //value 序列化
         KafkaProducer producer = new KafkaProducer<String, String>(props);
 
-        MetricEvent metric = new MetricEvent();
-        metric.setTimestamp(System.currentTimeMillis());
-        metric.setName("mem");
-        Map<String, String> tags = new HashMap<>();
-        Map<String, Object> fields = new HashMap<>();
-
-        tags.put("cluster", "zhisheng");
-        tags.put("host_ip", "101.147.022.106");
-
-        fields.put("used_percent", 90d);
-        fields.put("max", 27244873d);
-        fields.put("used", 17244873d);
-        fields.put("init", 27244873d);
-
-        metric.setTags(tags);
-        metric.setFields(fields);
-
-        ProducerRecord record = new ProducerRecord<String, String>(topic, null, null, GsonUtil.toJson(metric));
+        ProducerRecord record = new ProducerRecord<String, String>(topic, "userName", "lc");
         producer.send(record);
-        System.out.println("发送数据: " + GsonUtil.toJson(metric));
 
         producer.flush();
+
     }
+
 
     public static void main(String[] args) throws InterruptedException {
         while (true) {
-            Thread.sleep(300);
+            Thread.sleep(5000);
             writeToKafka();
         }
     }

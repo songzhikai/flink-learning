@@ -15,7 +15,7 @@ import java.util.Random;
  * 微信公众号：zhisheng
  */
 public class ProductUtil {
-    public static final String broker_list = "localhost:9092";
+    public static final String broker_list = "cdh00:9092";
     public static final String topic = "zhisheng";  //kafka topic 需要和 flink 程序用同一个 topic
 
     public static final Random random = new Random();

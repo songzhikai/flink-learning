@@ -13,7 +13,7 @@ import java.util.*;
  */
 public class BuildMachineMetricDataUtil {
 
-    public static final String BROKER_LIST = "localhost:9092";
+    public static final String BROKER_LIST = "cdh00:9092";
     public static final String METRICS_TOPIC = "zhisheng_metrics";
     public static Random random = new Random();
 

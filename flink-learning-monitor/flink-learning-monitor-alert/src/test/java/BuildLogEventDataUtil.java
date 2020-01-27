@@ -17,7 +17,7 @@ import java.util.Random;
  */
 @Slf4j
 public class BuildLogEventDataUtil {
-    public static final String BROKER_LIST = "localhost:9092";
+    public static final String BROKER_LIST = "cdh00:9092";
     public static final String LOG_TOPIC = "zhisheng_log";
 
     public static void writeDataToKafka() {
