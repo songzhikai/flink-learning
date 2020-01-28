@@ -1,7 +1,10 @@
 package com.zhisheng.connectors.redis;
 
 
+import com.zhisheng.common.model.MetricEvent;
 import com.zhisheng.common.model.ProductEvent;
+import com.zhisheng.common.schemas.MetricSchema;
+import com.zhisheng.common.schemas.ProductSchema;
 import com.zhisheng.common.utils.ExecutionEnvUtil;
 import com.zhisheng.common.utils.GsonUtil;
 import com.zhisheng.common.utils.KafkaConfigUtil;
@@ -10,6 +13,7 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer011;
@@ -25,9 +29,12 @@ import org.apache.flink.util.Collector;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 
+import static com.zhisheng.common.constant.PropertiesConstants.KFAKA_TOPIC;
 import static com.zhisheng.common.constant.PropertiesConstants.METRICS_TOPIC;
+import static com.zhisheng.common.utils.KafkaConfigUtil.buildKafkaProps;
 
 /**
  * Desc: 从 Kafka 中读取数据然后写入到 Redis
@@ -35,8 +42,37 @@ import static com.zhisheng.common.constant.PropertiesConstants.METRICS_TOPIC;
  * blog：http://www.54tianzhisheng.cn/
  * 微信公众号：zhisheng
  */
-public class Main {
-    public static void main(String[] args) throws Exception {
+public class KafkaToFlinkToRedis {
+    public static void main(String[] args) throws Exception{
+        final ParameterTool parameterTool = ExecutionEnvUtil.createParameterTool(args);
+        StreamExecutionEnvironment env = ExecutionEnvUtil.prepare(parameterTool);
+        Properties props = buildKafkaProps(parameterTool);
+        //kafka topic list
+        List<String> topics = Arrays.asList(parameterTool.get("metrics.topic"), parameterTool.get("logs.topic"));
+        FlinkKafkaConsumer011<ProductEvent> consumer = new FlinkKafkaConsumer011(topics, new ProductSchema(), props);
+        //kafka topic Pattern
+        //FlinkKafkaConsumer011<MetricEvent> consumer = new FlinkKafkaConsumer011<>(java.utils.regex.Pattern.compile("test-topic-[0-9]"), new MetricSchema(), props);
+
+
+//        consumer.setStartFromLatest();
+//        consumer.setStartFromEarliest()
+        DataStreamSource<ProductEvent> data = env.addSource(consumer);
+        SingleOutputStreamOperator<Tuple2<String, String>> outputStreamOperator = data.flatMap(new FlatMapFunction<ProductEvent, Tuple2<String, String>>() {
+            @Override
+            public void flatMap(ProductEvent productEvent, Collector<Tuple2<String, String>> out) throws Exception {
+                out.collect(new Tuple2<>(productEvent.getId().toString(), productEvent.getPrice().toString()));
+            }
+        });
+
+        outputStreamOperator.print();
+        //单个 Redis
+        FlinkJedisPoolConfig conf = new FlinkJedisPoolConfig.Builder().setHost(parameterTool.get("redis.host")).build();
+        outputStreamOperator.addSink(new RedisSink<Tuple2<String, String>>(conf, new RedisSinkMapper()));
+
+        env.execute("flink kafka connector test");
+    }
+
+    public static void main2(String[] args) throws Exception {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         ParameterTool parameterTool = ExecutionEnvUtil.PARAMETER_TOOL;
         Properties props = KafkaConfigUtil.buildKafkaProps(parameterTool);
@@ -79,7 +115,7 @@ public class Main {
     public static class RedisSinkMapper implements RedisMapper<Tuple2<String, String>> {
         @Override
         public RedisCommandDescription getCommandDescription() {
-            return new RedisCommandDescription(RedisCommand.HSET, "zhisheng");
+            return new RedisCommandDescription(RedisCommand.HSET, "kevin");
         }
 
         @Override
