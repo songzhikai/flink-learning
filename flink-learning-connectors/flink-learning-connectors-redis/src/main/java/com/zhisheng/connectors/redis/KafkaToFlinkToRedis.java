@@ -72,7 +72,25 @@ public class KafkaToFlinkToRedis {
         env.execute("flink kafka connector test");
     }
 
-    public static void main2(String[] args) throws Exception {
+    public static class RedisSinkMapper implements RedisMapper<Tuple2<String, String>> {
+        @Override
+        public RedisCommandDescription getCommandDescription() {
+            return new RedisCommandDescription(RedisCommand.HSET, "kevin");
+        }
+
+        @Override
+        public String getKeyFromData(Tuple2<String, String> data) {
+            return data.f0;
+        }
+
+        @Override
+        public String getValueFromData(Tuple2<String, String> data) {
+            return data.f1;
+        }
+    }
+
+
+    /*public static void main2(String[] args) throws Exception {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         ParameterTool parameterTool = ExecutionEnvUtil.PARAMETER_TOOL;
         Properties props = KafkaConfigUtil.buildKafkaProps(parameterTool);
@@ -97,35 +115,17 @@ public class KafkaToFlinkToRedis {
 
         //Redis 的 ip 信息一般都从配置文件取出来
         //Redis 集群
-/*        FlinkJedisClusterConfig clusterConfig = new FlinkJedisClusterConfig.Builder()
+*//*        FlinkJedisClusterConfig clusterConfig = new FlinkJedisClusterConfig.Builder()
                 .setNodes(new HashSet<InetSocketAddress>(
-                        Arrays.asList(new InetSocketAddress("redis1", 6379)))).build();*/
+                        Arrays.asList(new InetSocketAddress("redis1", 6379)))).build();*//*
 
         //Redis Sentinels
-/*        FlinkJedisSentinelConfig sentinelConfig = new FlinkJedisSentinelConfig.Builder()
+*//*        FlinkJedisSentinelConfig sentinelConfig = new FlinkJedisSentinelConfig.Builder()
                 .setMasterName("master")
                 .setSentinels(new HashSet<>(Arrays.asList("sentinel1", "sentinel2")))
                 .setPassword("")
-                .setDatabase(1).build();*/
+                .setDatabase(1).build();*//*
 
         env.execute("flink redis connector");
-    }
-
-
-    public static class RedisSinkMapper implements RedisMapper<Tuple2<String, String>> {
-        @Override
-        public RedisCommandDescription getCommandDescription() {
-            return new RedisCommandDescription(RedisCommand.HSET, "kevin");
-        }
-
-        @Override
-        public String getKeyFromData(Tuple2<String, String> data) {
-            return data.f0;
-        }
-
-        @Override
-        public String getValueFromData(Tuple2<String, String> data) {
-            return data.f1;
-        }
-    }
+    }*/
 }
