@@ -9,7 +9,7 @@ import java.util.Map;
 public class GetRedisData {
     public static void main(String[] args) { //获取
         Jedis jedis=new Jedis("127.0.0.1");
-        System.out.println(jedis.hgetAll("kevin"));
+        System.out.println(jedis.get("kevin1"));
     }
 
     public static void main2(String[] args) { //删除

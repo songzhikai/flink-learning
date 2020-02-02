@@ -36,7 +36,7 @@ public class Main {
         Properties props = KafkaConfigUtil.buildKafkaProps(parameterTool);
 
         SingleOutputStreamOperator<Student> student = env.addSource(new FlinkKafkaConsumer011<>(
-                parameterTool.get(METRICS_TOPIC),   //这个 kafka topic 需要和上面的工具类的 topic 一致
+                "student",   //这个 kafka topic 需要和上面的工具类的 topic 一致
                 new SimpleStringSchema(),
                 props)).setParallelism(parameterTool.getInt(STREAM_PARALLELISM, 1))
                 .map(string -> GsonUtil.fromJson(string, Student.class)).setParallelism(4); //解析字符串成 student 对象

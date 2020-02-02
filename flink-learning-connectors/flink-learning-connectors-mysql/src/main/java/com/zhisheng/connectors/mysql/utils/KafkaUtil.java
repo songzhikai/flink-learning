@@ -23,8 +23,8 @@ public class KafkaUtil {
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         KafkaProducer producer = new KafkaProducer<String, String>(props);
 
-        for (int i = 1; i <= 100; i++) {
-            Student student = new Student(i, "zhisheng" + i, "password" + i, 18 + i);
+        for (int i = 40; i <= 100; i++) {
+            Student student = new Student(i, "kevin" + i, "password" + i, 18 + i);
             ProducerRecord record = new ProducerRecord<String, String>(topic, null, null, GsonUtil.toJson(student));
             producer.send(record);
             System.out.println("发送数据: " + GsonUtil.toJson(student));

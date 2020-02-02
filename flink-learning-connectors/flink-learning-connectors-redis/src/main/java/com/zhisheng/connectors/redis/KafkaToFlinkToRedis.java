@@ -43,39 +43,51 @@ import static com.zhisheng.common.utils.KafkaConfigUtil.buildKafkaProps;
  * 微信公众号：zhisheng
  */
 public class KafkaToFlinkToRedis {
-    public static void main(String[] args) throws Exception{
-        final ParameterTool parameterTool = ExecutionEnvUtil.createParameterTool(args);
-        StreamExecutionEnvironment env = ExecutionEnvUtil.prepare(parameterTool);
-        Properties props = buildKafkaProps(parameterTool);
-        //kafka topic list
-        List<String> topics = Arrays.asList(parameterTool.get("metrics.topic"), parameterTool.get("logs.topic"));
-        FlinkKafkaConsumer011<ProductEvent> consumer = new FlinkKafkaConsumer011(topics, new ProductSchema(), props);
-        //kafka topic Pattern
-        //FlinkKafkaConsumer011<MetricEvent> consumer = new FlinkKafkaConsumer011<>(java.utils.regex.Pattern.compile("test-topic-[0-9]"), new MetricSchema(), props);
 
 
-//        consumer.setStartFromLatest();
-//        consumer.setStartFromEarliest()
-        DataStreamSource<ProductEvent> data = env.addSource(consumer);
-        SingleOutputStreamOperator<Tuple2<String, String>> outputStreamOperator = data.flatMap(new FlatMapFunction<ProductEvent, Tuple2<String, String>>() {
-            @Override
-            public void flatMap(ProductEvent productEvent, Collector<Tuple2<String, String>> out) throws Exception {
-                out.collect(new Tuple2<>(productEvent.getId().toString(), productEvent.getPrice().toString()));
-            }
-        });
+    public static void main(String[] args) throws Exception {
+        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        ParameterTool parameterTool = ExecutionEnvUtil.PARAMETER_TOOL;
+        Properties props = KafkaConfigUtil.buildKafkaProps(parameterTool);
 
-        outputStreamOperator.print();
+        SingleOutputStreamOperator<Tuple2<String, String>> product = env.addSource(new FlinkKafkaConsumer011<>(
+                parameterTool.get("metrics.topic"),   //这个 kafka topic 需要和上面的工具类的 topic 一致
+                new SimpleStringSchema(),
+                props))
+                .map(string -> GsonUtil.fromJson(string, ProductEvent.class)) //反序列化 JSON
+                .flatMap(new FlatMapFunction<ProductEvent, Tuple2<String, String>>() {
+                    @Override
+                    public void flatMap(ProductEvent value, Collector<Tuple2<String, String>> out) throws Exception {
+                        //收集商品 id 和 price 两个属性
+                        out.collect(new Tuple2<>(value.getId().toString(), value.getPrice().toString()));
+                    }
+                });
+        product.print();
+
         //单个 Redis
         FlinkJedisPoolConfig conf = new FlinkJedisPoolConfig.Builder().setHost(parameterTool.get("redis.host")).build();
-        outputStreamOperator.addSink(new RedisSink<Tuple2<String, String>>(conf, new RedisSinkMapper()));
+        product.addSink(new RedisSink<Tuple2<String, String>>(conf, new RedisSinkMapper()));
 
-        env.execute("flink kafka connector test");
+        //Redis 的 ip 信息一般都从配置文件取出来
+        //Redis 集群
+        /*FlinkJedisClusterConfig clusterConfig = new FlinkJedisClusterConfig.Builder()
+                .setNodes(new HashSet<InetSocketAddress>(
+                        Arrays.asList(new InetSocketAddress("redis1", 6379)))).build();
+
+        //Redis Sentinels
+        FlinkJedisSentinelConfig sentinelConfig = new FlinkJedisSentinelConfig.Builder()
+                .setMasterName("master")
+                .setSentinels(new HashSet<>(Arrays.asList("sentinel1", "sentinel2")))
+                .setPassword("")
+                .setDatabase(1).build();*/
+
+        env.execute("flink redis connector");
     }
 
     public static class RedisSinkMapper implements RedisMapper<Tuple2<String, String>> {
         @Override
         public RedisCommandDescription getCommandDescription() {
-            return new RedisCommandDescription(RedisCommand.HSET, "kevin");
+            return new RedisCommandDescription(RedisCommand.HSET, "kevin1");
         }
 
         @Override
@@ -89,43 +101,4 @@ public class KafkaToFlinkToRedis {
         }
     }
 
-
-    /*public static void main2(String[] args) throws Exception {
-        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        ParameterTool parameterTool = ExecutionEnvUtil.PARAMETER_TOOL;
-        Properties props = KafkaConfigUtil.buildKafkaProps(parameterTool);
-
-        SingleOutputStreamOperator<Tuple2<String, String>> product = env.addSource(new FlinkKafkaConsumer011<>(
-                parameterTool.get(METRICS_TOPIC),   //这个 kafka topic 需要和上面的工具类的 topic 一致
-                new SimpleStringSchema(),
-                props))
-                .map(string -> GsonUtil.fromJson(string, ProductEvent.class)) //反序列化 JSON
-                .flatMap(new FlatMapFunction<ProductEvent, Tuple2<String, String>>() {
-                    @Override
-                    public void flatMap(ProductEvent value, Collector<Tuple2<String, String>> out) throws Exception {
-                        //收集商品 id 和 price 两个属性
-                        out.collect(new Tuple2<>(value.getId().toString(), value.getPrice().toString()));
-                    }
-                });
-//        product.print();
-
-        //单个 Redis
-        FlinkJedisPoolConfig conf = new FlinkJedisPoolConfig.Builder().setHost(parameterTool.get("redis.host")).build();
-        product.addSink(new RedisSink<Tuple2<String, String>>(conf, new RedisSinkMapper()));
-
-        //Redis 的 ip 信息一般都从配置文件取出来
-        //Redis 集群
-*//*        FlinkJedisClusterConfig clusterConfig = new FlinkJedisClusterConfig.Builder()
-                .setNodes(new HashSet<InetSocketAddress>(
-                        Arrays.asList(new InetSocketAddress("redis1", 6379)))).build();*//*
-
-        //Redis Sentinels
-*//*        FlinkJedisSentinelConfig sentinelConfig = new FlinkJedisSentinelConfig.Builder()
-                .setMasterName("master")
-                .setSentinels(new HashSet<>(Arrays.asList("sentinel1", "sentinel2")))
-                .setPassword("")
-                .setDatabase(1).build();*//*
-
-        env.execute("flink redis connector");
-    }*/
 }

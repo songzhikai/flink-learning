@@ -80,7 +80,7 @@ public class SinkToMySQL extends RichSinkFunction<List<Student>> {
         //注意，替换成自己本地的 mysql 数据库地址和用户名、密码
         dataSource.setUrl("jdbc:mysql://localhost:3306/test");
         dataSource.setUsername("root");
-        dataSource.setPassword("root123456");
+        dataSource.setPassword("123456");
         //设置连接池的一些参数
         dataSource.setInitialSize(10);
         dataSource.setMaxTotal(50);
